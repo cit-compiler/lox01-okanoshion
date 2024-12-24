@@ -1,12 +1,14 @@
 package com.craftinginterpreters.lox;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
+import com.craftinginterpreters.lox.Interpreter;
+import com.craftinginterpreters.lox.RuntimeError;
+import com.craftinginterpreters.lox.Token;
+import com.craftinginterpreters.lox.Scanner;
+import com.craftinginterpreters.lox.Parser;
+import com.craftinginterpreters.lox.Expr;
+import com.craftinginterpreters.lox.AstPrinter;
+import com.craftinginterpreters.lox.TokenType;
 
 public class Lox {
   private static final Interpreter interpreter = new Interpreter();
