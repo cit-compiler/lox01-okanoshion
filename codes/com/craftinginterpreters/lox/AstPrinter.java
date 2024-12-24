@@ -1,56 +1,146 @@
 package com.craftinginterpreters.lox;
 
-import com.craftinginterpreters.lox.Expr;  // Exprクラスのインポート
+import java.util.List;
+import static com.craftinginterpreters.lox.TokenType.*; // トークンタイプをインポート
 
-class AstPrinter implements Expr.Visitor<String> {
-  String print(Expr expr) {
-    return expr.accept(this);
-  }
+class Parser {
 
-  @Override
-  public String visitBinaryExpr(Expr.Binary expr) {
-    return parenthesize(expr.operator.lexeme, expr.left, expr.right);
-  }
+    private static class ParseError extends RuntimeException {}
 
-  @Override
-  public String visitGroupingExpr(Expr.Grouping expr) {
-    return parenthesize("group", expr.expression);
-  }
+    private final List<Token> tokens;
+    private int current = 0;
 
-  @Override
-  public String visitLiteralExpr(Expr.Literal expr) {
-    if (expr.value == null) return "nil";
-    return expr.value.toString();
-  }
-
-  @Override
-  public String visitUnaryExpr(Expr.Unary expr) {
-    return parenthesize(expr.operator.lexeme, expr.right);
-  }
-
-  private String parenthesize(String name, Expr... exprs) {
-    StringBuilder builder = new StringBuilder();
-
-    builder.append("(").append(name);
-    for (Expr expr : exprs) {
-      builder.append(" ");
-      builder.append(expr.accept(this));
+    Parser(List<Token> tokens) {
+        this.tokens = tokens;
     }
-    builder.append(")");
 
-    return builder.toString();
-  }
+    Expr parse() {
+        try {
+            return expression();
+        } catch (ParseError error) {
+            return null;
+        }
+    }
 
-  // mainメソッドを追加
-  public static void main(String[] args) {
-    Expr expression = new Expr.Binary(
-        new Expr.Unary(
-            new Token(TokenType.MINUS, "-", null, 1),
-            new Expr.Literal(123)),
-        new Token(TokenType.STAR, "*", null, 1),
-        new Expr.Grouping(
-            new Expr.Literal(45.67)));
+    private Expr expression() {
+        return equality();
+    }
 
-    System.out.println(new AstPrinter().print(expression));
-  }
+    private Expr equality() {
+        Expr expr = comparison();
+
+        while (match(BANG_EQUAL, EQUAL_EQUAL)) {
+            Token operator = previous();
+            Expr right = comparison();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Expr comparison() {
+        Expr expr = term();
+
+        while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
+            Token operator = previous();
+            Expr right = term();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Expr term() {
+        Expr expr = factor();
+
+        while (match(MINUS, PLUS)) {
+            Token operator = previous();
+            Expr right = factor();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Expr factor() {
+        Expr expr = unary();
+
+        while (match(SLASH, STAR)) {
+            Token operator = previous();
+            Expr right = unary();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Expr unary() {
+        if (match(BANG, MINUS)) {
+            Token operator = previous();
+            Expr right = unary();
+            return new Expr.Unary(operator, right);
+        }
+
+        return primary();
+    }
+
+    private Expr primary() {
+        if (match(FALSE)) return new Expr.Literal(false);
+        if (match(TRUE)) return new Expr.Literal(true);
+        if (match(NIL)) return new Expr.Literal(null);
+
+        if (match(NUMBER, STRING)) {
+            return new Expr.Literal(previous().literal);
+        }
+
+        if (match(LEFT_PAREN)) {
+            Expr expr = expression();
+            consume(RIGHT_PAREN, "Expect ')' after expression.");
+            return new Expr.Grouping(expr);
+        }
+
+        throw error(peek(), "Expect expression.");
+    }
+
+    private boolean match(TokenType... types) {
+        for (TokenType type : types) {
+            if (check(type)) {
+                advance();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean check(TokenType type) {
+        if (isAtEnd()) return false;
+        return peek().type == type;
+    }
+
+    private Token advance() {
+        if (!isAtEnd()) current++;
+        return previous();
+    }
+
+    private boolean isAtEnd() {
+        return peek().type == EOF;
+    }
+
+    private Token peek() {
+        return tokens.get(current);
+    }
+
+    private Token previous() {
+        return tokens.get(current - 1);
+    }
+
+    private Token consume(TokenType type, String message) {
+        if (check(type)) return advance();
+        throw error(peek(), message);
+    }
+
+    private ParseError error(Token token, String message) {
+        Lox.error(token, message);
+        return new ParseError();
+    }
 }
