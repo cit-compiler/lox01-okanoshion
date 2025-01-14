@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class Lox {
   private static final Interpreter interpreter = new Interpreter();
@@ -45,16 +46,22 @@ public class Lox {
     }
   }
 
-   private static void run(String source) {
+  private static void run(String source) {
     Scanner scanner = new Scanner(source);
-    List<Token> tokens = (List<Token>) scanner.tokens();
+
+    // Scannerが返すStream<String>をTokenに変換してリストに追加
+    List<Token> tokens = scanner.tokens()
+        .map(tokenString -> new Token(TokenType.IDENTIFIER, tokenString, null, 0)) // ここでは仮にTokenType.IDENTIFIERを使用
+        .collect(Collectors.toList()); 
+
     Parser parser = new Parser(tokens);
     List<Stmt> statements = parser.parse();
 
     if (hadError) return;
 
     interpreter.interpret(statements);
-  }
+}
+
 
   static void error(int line, String message) {
     report(line, "", message);

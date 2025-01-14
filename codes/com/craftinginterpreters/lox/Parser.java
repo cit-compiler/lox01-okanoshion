@@ -210,12 +210,16 @@ class Parser {
   }
 
   private boolean isAtEnd() {
-    return peek().type == EOF;
-  }
+    return current >= tokens.size();
+}
 
-  private Token peek() {
+private Token peek() {
+    if (isAtEnd()) {
+        return new Token(TokenType.EOF, "", null, 0);
+    }
     return tokens.get(current);
-  }
+}
+
 
   private Token previous() {
     return tokens.get(current - 1);
