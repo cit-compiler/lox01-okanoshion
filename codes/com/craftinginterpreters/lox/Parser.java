@@ -10,6 +10,11 @@ class Parser {
   private final List<Token> tokens;
   private int current = 0;
 
+  public Parser(List<Token> tokens) {
+    this.tokens = tokens;
+  }
+  
+
    List<Stmt> parse() {
     List<Stmt> statements = new ArrayList<>();
     while (!isAtEnd()) {
@@ -19,13 +24,7 @@ class Parser {
     return statements; 
   }
 
-  Expr parse() {
-    try {
-      return expression();
-    } catch (ParseError error) {
-      return null;
-    }
-  }
+ 
 
   private Expr expression() {
     return assignment();
@@ -83,6 +82,7 @@ class Parser {
     consume(RIGHT_BRACE, "Expect '}' after block.");
     return statements;
   }
+
 
   private Expr assignment() {
     Expr expr = equality();
