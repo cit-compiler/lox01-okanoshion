@@ -10,6 +10,7 @@ import static com.craftinginterpreters.lox.TokenType.*;
 class Scanner {
   private final String source;
   private final List<Token> tokens = new ArrayList<>();
+
   private int start = 0;
   private int current = 0;
   private int line = 1;
@@ -63,7 +64,7 @@ class Scanner {
       case '-': addToken(MINUS); break;
       case '+': addToken(PLUS); break;
       case ';': addToken(SEMICOLON); break;
-      case '*': addToken(STAR); break;
+      case '*': addToken(STAR); break; 
       case '!':
         addToken(match('=') ? BANG_EQUAL : BANG);
         break;
@@ -76,35 +77,36 @@ class Scanner {
       case '>':
         addToken(match('=') ? GREATER_EQUAL : GREATER);
         break;
-        case '/':
+
+      case '/':
         if (match('/')) {
           // A comment goes until the end of the line.
           while (peek() != '\n' && !isAtEnd()) advance();
         } else {
           addToken(SLASH);
         }
-        break;
+        break;  
 
-        case ' ':
+      case ' ':
       case '\r':
       case '\t':
-        // Ignore whitespace.
+          // Ignore whitespace.
         break;
-
+  
       case '\n':
         line++;
-        break;
+        break; 
+        
+      case '"': string(); break;
 
-        case '"': string(); break;
-      
       default:
-      if (isDigit(c)) {
-        number();
-      } else if(isAlpha(c)){
-        identifier();
-      } else {
-        Lox.error(line, "Unexpected character.");
-      }
+        if (isDigit(c)) {
+          number();
+        }else if (isAlpha(c)){
+          identifier();
+        } else {
+          Lox.error(line, "Unexpected character.");
+        }
         break;
     }
   }
